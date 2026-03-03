@@ -18,64 +18,32 @@ open Real
 noncomputable def deg : ℕ → ℝ := fun n => (n:ℝ) / 360 * 2 * π
 /-- Exercise 1.2.2 -/
 theorem rusczyk_1_1_2 {V : Type*} {P : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
-  [MetricSpace P] [NormedAddTorsor V P] (A B M N : P)
+  [MetricSpace P] [NormedAddTorsor V P] {A B M N : P}
+  (hM : M = midpoint ℝ A B) (hN : N = midpoint ℝ B M) (h : dist B N = 4) :
+  dist A B = 16 := by
+    subst M N
+    rw [dist_left_midpoint, dist_right_midpoint, norm_ofNat] at h
+    linarith
+
+/-- Making A B M N have L^2 type ensures that `dist` uses the right distance. -/
+theorem rusczyk_1_1_2' {d : ℕ} {A B M N : PiLp 2 fun _ : Fin d => ℝ}
   (hM : M = midpoint ℝ A B)
   (hN : N = midpoint ℝ B M)
   (h : dist B N = 4) :
-  dist A B = 16 := by
-    have h₀ : dist M N = 4 := by
-      rw [← h]
-      rw [hN]
-      simp
-    have h₁ : dist M B = 4+4 := by
-      rw [dist_comm] at h
-      nth_rewrite 1 [← h]
-      rw [add_comm]
-      rw [← h₀]
-
-      refine Eq.symm (Wbtw.dist_add_dist ?h)
-      rw [hN]
-      have g₁ : midpoint ℝ M B = midpoint ℝ B M := (midpoint_eq_midpoint_iff_vsub_eq_vsub ℝ).mpr rfl
-      exact g₁ ▸ wbtw_midpoint ℝ M B
-    have h₂ : dist A M = dist M B := by
-      rw [hM]
-      simp
-    have h₃ : dist A B = dist A M + dist M B := by
-      rw [hM]
-      simp
-      ring
-    linarith
-
-noncomputable def dl {n : ℕ} (x y : Fin n → ℝ) : ℝ :=
-  dist (self := PiLp.instDist 2 fun _ ↦ ℝ) (WithLp.toLp 2 x)
-    (WithLp.toLp 2 y)
-
-theorem rusczyk_1_1_2' {d : ℕ} (A B M N : EuclideanSpace ℝ (Fin d))
-  (hM : M = midpoint ℝ A B)
-  (hN : N = midpoint ℝ B M)
-  (h : dl B N = 4) :
-  dl A B = 16 := by
-  apply rusczyk_1_1_2 -- applied to *any* metric so both "dist" and "dl"
-  exact hM
-  exact hN
-  exact h
+  dist A B = 16 := rusczyk_1_1_2 hM hN h
 
 /-- A concrete example of `rusczyk_1_1_2'`. -/
-example : (![(3:ℝ),1])
-  = midpoint ℝ ![1,0] ![5,2] := by
+example : (![(3:ℝ),1]) = midpoint ℝ ![1,0] ![5,2] := by
   simp [midpoint, AffineMap.lineMap]
   grind
 
 
-example : dl ![(0 : ℝ),0] ![3,4] = 5 := by
-  simp [dl]
+example : dist (WithLp.toLp 2 ![(0 : ℝ),0]) (WithLp.toLp 2 ![3,4]) = 5 := by
+  simp
   rw [EuclideanSpace.dist_eq]
   simp
   refine Real.sqrt_eq_cases.mpr ?_
-  left
-  constructor
-  · linarith
-  · positivity
+  grind
 
 instance : Fact (Module.finrank ℝ (EuclideanSpace ℝ (Fin 2)) = 2) := { out := finrank_euclideanSpace_fin }
 -- instance : Fact (Module.finrank ℝ (Fin (Nat.succ 1) → ℝ) = 2) := { out := finrank_euclideanSpace_fin }
@@ -92,13 +60,12 @@ instance : Fact (Module.finrank ℂ (EuclideanSpace ℂ (Fin 2)) = 2) := { out :
 --     ⟨Basis.orientation <| Pi.basisFun _ _⟩
 
 noncomputable instance :  InnerProductSpace ℝ (WithLp 2 (Fin (Nat.succ 1) → ℝ))
- := by exact PiLp.innerProductSpace fun i ↦ ℝ
+ := PiLp.innerProductSpace fun _ ↦ ℝ
 
 
 noncomputable instance : Module.Oriented ℝ (EuclideanSpace ℝ (Fin 2)) (Fin 2) := by
   refine { positiveOrientation := ?_ }
-  refine Module.Basis.orientation ?_
-  exact PiLp.basisFun 2 ℝ (Fin 2)
+  refine Module.Basis.orientation $ PiLp.basisFun 2 ℝ (Fin 2)
 
 -- have : angle X O Y = ∠ X O Y := rfl
 
@@ -116,13 +83,16 @@ W   X
 | /
 O --- Y
 
- where OX is between OW and OY -/
+ where OX is between OW and OY.
+
+ The angle ∡ can be written oangle.
+  -/
 theorem rusczyk_problem_2_3 {O W X Y : EuclideanSpace ℝ (Fin 2)}
     (hW : W ≠ O) (hX : X ≠ O) (hY : Y ≠ O)
-    (h₁ : (oangle W O Y) = π / (3:ℝ))
-    (h₂ : (oangle W O X) = π / (9:ℝ)) :
-    oangle X O Y = (2:ℝ) / 9 * π := by
-  have :  ↑(π / 9) + oangle X O Y = ↑(π / 3) :=
+    (h₁ : ∡ W O Y = π / (3:ℝ))
+    (h₂ : ∡ W O X = π / (9:ℝ)) :
+    ∡ X O Y = (2:ℝ) / 9 * π := by
+  have : ↑(π / 9) + ∡ X O Y = ↑(π / 3) :=
     h₁ ▸ h₂ ▸ oangle_add hW hX hY
   rw [eq_sub_of_add_eq' this]
   rw [← Angle.coe_sub]
@@ -132,12 +102,11 @@ theorem rusczyk_problem_2_3 {O W X Y : EuclideanSpace ℝ (Fin 2)}
 
 
 theorem rusczyk_problem_2_4 {P Q R : EuclideanSpace ℝ (Fin 2)}
-    (h₁ : (oangle P Q R) = deg 40) :
-    oangle R Q P = deg 320 := by
+    (h₁ : ∡ P Q R = deg 40) :
+    ∡ R Q P = deg 320 := by
   rw [oangle_rev P Q R]
   rw [h₁]
-  unfold deg at *
-  simp
+  simp [deg]
   refine neg_eq_of_add_eq_zero_right ?_
   rw [← Angle.coe_add]
   refine Angle.coe_eq_zero_iff.mpr ?_
@@ -149,9 +118,8 @@ theorem rusczyk_problem_2_4 {P Q R : EuclideanSpace ℝ (Fin 2)}
 theorem rusczyk_problem_2_6  {d : ℕ} (A B O : EuclideanSpace ℝ (Fin d))
     (h : Sbtw ℝ A O B) :
     angle A O B = deg 180 := by
-  unfold deg
   convert Sbtw.angle₁₂₃_eq_pi h using 1
-  simp
+  simp [deg]
   norm_num
 
 
@@ -168,17 +136,15 @@ V   Z
 Given ∠ YXZ = 55°, find ∠ WXY.
 (The point V is not relevant.)
 -/
-theorem rusczyk_problem_2_7 (X W Y Z : EuclideanSpace ℝ (Fin 2))
+theorem rusczyk_problem_2_7 {X W Y Z : EuclideanSpace ℝ (Fin 2)}
     (hW : W ≠ X) (hY : Y ≠ X) (hZ : Z ≠ X)
     (h₀ : Sbtw ℝ W X Z)
-    (h₁ : oangle Y X Z = deg 55) :
-    oangle W X Y = deg 125 := by
+    (h₁ : ∡ Y X Z = deg 55) :
+    ∡ W X Y = deg 125 := by
   unfold deg at *
-  have := eq_sub_of_add_eq $ oangle_add hW hY hZ
-  rw [this, h₁]
-  have := oangle_eq_pi_iff_sbtw.mpr h₀
-  rw [this]
-  simp
+  rw [eq_sub_of_add_eq $ oangle_add hW hY hZ]
+  rw [h₁]
+  rw [oangle_eq_pi_iff_sbtw.mpr h₀]
   rw [← Angle.coe_sub]
   congr
   linarith
@@ -204,21 +170,19 @@ to prove `oangle O P L` = ∠ OPL = 72°.
 theorem rusczyk_problem_2_9 {L M N O P : EuclideanSpace ℝ (Fin 2)}
     (hL : L ≠ P) (hM : M ≠ P) (hN : N ≠ P) (hO : O ≠ P)
     (hb₀ : Sbtw ℝ L P N) (hb₁ : Sbtw ℝ M P O) :
-    oangle O P L = oangle M P N := by
+    ∡ O P L = ∡ M P N := by
   have h₀ := oangle_add hO hL hM
   have h₁ := oangle_add hL hM hN
-  rw [oangle_eq_pi_iff_sbtw.mpr hb₀] at h₁
   rw [oangle_eq_pi_iff_sbtw.mpr hb₁.symm] at h₀
-  rw [← h₀,add_comm] at h₁
-  simp at h₁
+  rw [oangle_eq_pi_iff_sbtw.mpr hb₀, ← h₀, add_comm, add_left_inj] at h₁
   exact h₁.symm
 
 
 theorem rusczyk_problem_2_8  {L M N O P : EuclideanSpace ℝ (Fin 2)}
     (hL : L ≠ P) (hM : M ≠ P) (hN : N ≠ P) (hO : O ≠ P)
     (hb₀ : Sbtw ℝ L P N) (hb₁ : Sbtw ℝ M P O)
-    (h : oangle M P N = deg 72) :
-    oangle O P L = deg 72 := rusczyk_problem_2_9 hL hM hN hO hb₀ hb₁ ▸ h
+    (h : ∡ M P N = deg 72) :
+    ∡ O P L = deg 72 := rusczyk_problem_2_9 hL hM hN hO hb₀ hb₁ ▸ h
 
 
 theorem a_2_10
@@ -234,8 +198,7 @@ theorem a_2_10
   rw [g₁] at g₃
   show ∡ B E F = ↑(deg 67)
   have g₄ : ∡ B E F + ∡ F E B = 0 := by
-    have : ∡ B E B = 0 := by exact oangle_self_left_right B E
-    rw [← this]
+    rw [← oangle_self_left_right B E]
     exact oangle_add h₂ h₁ h₂
   -- have : ∠ B E F = - ∠ F E B := by apply?
   have g₅ := eq_sub_of_add_eq' g₃
@@ -251,9 +214,7 @@ theorem a_2_10
     unfold deg
     linarith
   rw [this]
-  clear this g₅
-  show  ∡ B E F = ↑(π - deg 113)
-  suffices  ∡ B E F = - ↑(deg 113 - π) by
+  suffices ∡ B E F = - ↑(deg 113 - π) by
     rw [this]
     simp
   exact eq_neg_of_add_eq_zero_left g₄
@@ -272,7 +233,7 @@ D ------ E ----------- F
       H
 
 -/
-theorem rusczyk_problem_2_10 (m n : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2)))
+theorem rusczyk_problem_2_10 {m n : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2))}
     {A B C D E F G H : EuclideanSpace ℝ (Fin 2)}
     (hm : m = affineSpan ℝ {A, C})
     (hn : n = affineSpan ℝ {D, F})
@@ -281,11 +242,11 @@ theorem rusczyk_problem_2_10 (m n : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 
     (hE : E ∈ n)
     (hB' : Sbtw ℝ A B C)
     (hE' : Sbtw ℝ D E F)
-    (h : oangle D E B = deg 113)
+    (h : ∡ D E B = deg 113)
     (h₀ : D ≠ E) (h₁ : F ≠ E)
     (h₂ : B ≠ E)
     (hmn : m ≠ n) :
-    oangle B E F = deg 67 ∧ oangle F E H  = deg 113 := by
+    ∡ B E F = deg 67 ∧ ∡ F E H = deg 113 := by
   constructor
   apply a_2_10 hE' h h₀ h₁ h₂
   sorry
@@ -394,7 +355,7 @@ D ------ E --p--------- F
 --         = (![1,0] : EuclideanSpace ℝ (Fin 2))
 --   := rfl
 
-example (A B : EuclideanSpace ℝ (Fin 2)) : o.oangle A B = 0 := by sorry
+-- example (A B : EuclideanSpace ℝ (Fin 2)) : o.oangle A B = 0 := by sorry
 
 -- example : o.oangle ((![1,0]) : EuclideanSpace ℝ (Fin 2))
 --                    (![0,1] : EuclideanSpace ℝ (Fin 2)) = 0 := by sorry
@@ -410,14 +371,14 @@ example (c : ℝ) (hc : 0 ≤ c) : o.oangle e₁ (c • e₁) = 0 := by
   exact Orientation.oangle_smul_smul_self_of_nonneg (r₂ := c) (r₁ := 1) (x := e₁) o
     (by simp) hc
 
-example (c : ℝ) (hc : 0 ≤ c) : o.oangle e₁ (-c • e₁) = π := by
-  have : e₁ = (1 : ℝ) • e₁ := by simp
-  nth_rewrite 1 [this]
-  have := Orientation.oangle_smul_smul_self_of_nonneg (r₂ := c) (r₁ := 1) (x := e₁) o
-    (by simp) hc
-  simp
+-- example (c : ℝ) (hc : 0 ≤ c) : o.oangle e₁ (-c • e₁) = π := by
+--   have : e₁ = (1 : ℝ) • e₁ := by simp
+--   nth_rewrite 1 [this]
+--   have := Orientation.oangle_smul_smul_self_of_nonneg (r₂ := c) (r₁ := 1) (x := e₁) o
+--     (by simp) hc
+--   simp
 
-  sorry
+--   sorry
 
 
 -- example : o.oangle e₁ e₂ = π /(2:ℝ):= by
