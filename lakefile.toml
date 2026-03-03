@@ -1,0 +1,12 @@
+name = "aops"
+defaultTargets = ["Aops"]
+
+[leanOptions]
+pp.unicode.fun = true
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+
+[[lean_lib]]
+name = "Aops"
