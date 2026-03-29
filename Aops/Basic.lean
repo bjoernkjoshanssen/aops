@@ -417,59 +417,120 @@ lemma event3_c (n : ℕ) (e m s : Finset (Fin n))
   · linarith
   · linarith
 
+-- This works but is too long:
+-- open Finset in
+-- lemma event3_c_lower_sharp :
+--  ∃ (n : ℕ) (e m s : Finset (Fin n)),
+--     (#e = 100) ∧
+--     (#m = 80) ∧
+--     (#s = 60) ∧
+--     (#(e ∩ m ∩ sᶜ) = 40) ∧
+--     (#(e ∩ mᶜ ∩ s) = 10) ∧
+--     (#(eᶜ ∩ m ∩ s) = 35) ∧
+--     45 = #(e ∩ mᶜ ∩ sᶜ) := by
+--   use 145
+--   use Finset.Ico 0 100
+--   use Finset.Ico 55 (55+80)
+--   use (Finset.Ico 45 (45+10+5)) ∪ (Finset.Icc 100 144)
+--   simp
+
+--   constructor
+--   · rw [card_union]
+--     simp
+--     have : #(Ico (45 : Fin 145) 60 ∩ Icc 100 144) = 0 := by sorry
+--     simp_rw [this]
+--   · have g₀ : (Ico (0 : Fin 145) 100) ∩ (Ico 55 135 ∩ ((Ico 45 60)ᶜ ∩ (Icc 100 144)ᶜ))
+--             = Ico 60 100 := by
+--         ext x
+--         simp
+--         constructor
+--         · intro h
+--           constructor
+--           · apply h.2.2.1
+--             refine le_trans ?_ h.2.1.1
+--             simp
+--           · tauto
+--         · intro h
+--           constructor
+--           · tauto
+--           · constructor
+--             · constructor
+--               · refine le_trans ?_ h.1
+--                 simp
+--               · apply lt_trans h.2
+--                 simp
+--             · constructor
+--               · tauto
+--               · intro h₀
+--                 exact False.elim <| (lt_self_iff_false _).mp (lt_of_le_of_lt h₀ h.2)
+--     constructor
+--     · rw [g₀]
+--       simp
+--     · constructor
+--       · sorry
+--       · constructor
+--         · sorry
+--         · sorry
+
 open Finset in
-lemma event3_c_lower_sharp :
- ∃ (n : ℕ) (e m s : Finset (Fin n)),
+lemma event3_c_lower_sharp' :
+ ∃ (e m s : Finset ℕ),
     (#e = 100) ∧
     (#m = 80) ∧
     (#s = 60) ∧
-    (#(e ∩ m ∩ sᶜ) = 40) ∧
-    (#(e ∩ mᶜ ∩ s) = 10) ∧
-    (#(eᶜ ∩ m ∩ s) = 35) ∧
-    45 = #(e ∩ mᶜ ∩ sᶜ) := by
-  use 145
+    (#((e ∩ m) \ s) = 40) ∧
+    (#((e ∩ s) \ m) = 10) ∧
+    (#((m ∩ s) \ e) = 35) ∧
+    45 = #(e \ (m ∪ s)) := by
   use Finset.Ico 0 100
   use Finset.Ico 55 (55+80)
   use (Finset.Ico 45 (45+10+5)) ∪ (Finset.Icc 100 144)
   simp
+  rw [card_union]
+  simp
+  have h₀ : (Ico (45) 60 ∩ Icc 100 144) = ∅ := by ext;simp;omega
+  rw [h₀]
+  have h₁ : ((range 100 ∩ Ico 55 135) \ (Ico 45 60 ∪ Icc 100 144))
+        = Ico 60 100 := by ext;simp;omega
+  rw [h₁]
+  have h₂ : ((range 100 ∩ (Ico 45 60 ∪ Icc 100 144)) \ Ico 55 135)
+            = Ico 45 55 := by ext;simp;omega
+  rw [h₂]
+  have h₃ : ((Ico 55 135 ∩ (Ico 45 60 ∪ Icc 100 144)) \ range 100)
+            = Ico 100 135 := by ext;simp;omega
+  rw [h₃]
+  have h₄ : (range 100 \ (Ico 55 135 ∪ (Ico 45 60 ∪ Icc 100 144)))
+            = range 45 := by ext;simp;omega
+  rw [h₄]
+  simp
 
-  constructor
-  · rw [card_union]
-    simp
-    have : #(Ico (45 : Fin 145) 60 ∩ Icc 100 144) = 0 := by sorry
-    simp_rw [this]
-  · have g₀ : (Ico (0 : Fin 145) 100) ∩ (Ico 55 135 ∩ ((Ico 45 60)ᶜ ∩ (Icc 100 144)ᶜ))
-            = Ico 60 100 := by
-        ext x
-        simp
-        constructor
-        · intro h
-          constructor
-          · apply h.2.2.1
-            refine le_trans ?_ h.2.1.1
-            simp
-          · tauto
-        · intro h
-          constructor
-          · tauto
-          · constructor
-            · constructor
-              · refine le_trans ?_ h.1
-                simp
-              · apply lt_trans h.2
-                simp
-            · constructor
-              · tauto
-              · intro h₀
-                exfalso
-                have : (100 : Fin 145) < 100 := lt_of_le_of_lt h₀ h.2
-                simp at this
-
-    constructor
-    · rw [g₀]
-      simp
-    · constructor
-      · sorry
-      · constructor
-        · sorry
-        · sorry
+open Finset in
+lemma event3_c_upper_sharp' :
+ ∃ (e m s : Finset ℕ),
+    (#e = 100) ∧
+    (#m = 80) ∧
+    (#s = 60) ∧
+    (#((e ∩ m) \ s) = 40) ∧
+    (#((e ∩ s) \ m) = 10) ∧
+    (#((m ∩ s) \ e) = 35) ∧
+    50 = #(e \ (m ∪ s)) := by
+  use Finset.Ico 0 100
+  use Finset.Ico 60 (60+80)
+  use (Finset.Ico 50 (50+10+0)) ∪ (Finset.Icc 105 154)
+  rw [card_union]
+  have h₀ : (Ico 50 60 ∩ Icc 105 154) = ∅ := by ext;simp;omega
+  rw [h₀]
+  simp
+  have h₁ : (range 100 ∩ Ico 60 140) \ (Ico 50 60 ∪ Icc 105 154)
+        = Ico 60 100 := by ext;simp;omega
+  rw [h₁]
+  have h₂ : ((range 100 ∩ (Ico 50 60 ∪ Icc 105 154)) \ Ico 60 140)
+            = Ico 50 60 := by ext;simp;omega
+  rw [h₂]
+  have h₃ : ((Ico 60 140 ∩ (Ico 50 60 ∪ Icc 105 154)) \ range 100)
+            = Ico 105 140 := by ext;simp;omega
+  rw [h₃]
+  have h₄ : (range 100 \ (Ico 60 140 ∪ (Ico 50 60 ∪ Icc 105 154)))
+            = range 50 := by ext;simp;omega
+  rw [h₄]
+  simp
