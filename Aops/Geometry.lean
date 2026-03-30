@@ -251,10 +251,6 @@ D ------ E ----------- F
       b / c (113° ✓)
 (67° ✓)/
       H
-
-de fe ab bc
-he be bg
-
 -/
 theorem rusczyk_problem_2_11
     {A B C D E F G H : EuclideanSpace ℝ (Fin 2)}
@@ -299,6 +295,7 @@ theorem rusczyk_problem_2_11
     refine AffineSubspace.affineSpan_pair_parallel_iff_exists_unit_smul'.mpr ?_
     simp
     rw [sub_add_eq_sub_sub_swap]
+    have : 1 - x ≠ 0 := by linarith
     use ⟨1 / (1 - x), 1 - x, by field_simp, by field_simp⟩
     simp
     generalize E - B = α
