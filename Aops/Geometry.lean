@@ -48,7 +48,6 @@ example : dist (WithLp.toLp 2 ![(0 : ℝ),0]) (WithLp.toLp 2 ![3,4]) = 5 := by
 instance : Fact (Module.finrank ℝ (EuclideanSpace ℝ (Fin 2)) = 2) := { out := finrank_euclideanSpace_fin }
 -- instance : Fact (Module.finrank ℝ (Fin (Nat.succ 1) → ℝ) = 2) := { out := finrank_euclideanSpace_fin }
 
-instance : Fact (Module.finrank ℂ (EuclideanSpace ℂ (Fin 2)) = 2) := { out := finrank_euclideanSpace_fin }
 
 /- By Eric Wieser at https://leanprover.zulipchat.com/#narrow/channel/287929-mathlib4/topic/Euclidean.20space.20is.20oriented/
 -/
@@ -59,8 +58,6 @@ instance : Fact (Module.finrank ℂ (EuclideanSpace ℂ (Fin 2)) = 2) := { out :
 -- noncomputable instance : Module.Oriented ℝ (Fin (Nat.succ 1) → ℝ) (Fin 2) :=
 --     ⟨Basis.orientation <| Pi.basisFun _ _⟩
 
-noncomputable instance :  InnerProductSpace ℝ (WithLp 2 (Fin (Nat.succ 1) → ℝ))
- := PiLp.innerProductSpace fun _ ↦ ℝ
 
 
 noncomputable instance : Module.Oriented ℝ (EuclideanSpace ℝ (Fin 2)) (Fin 2) := by
@@ -168,21 +165,22 @@ to prove `oangle O P L` = ∠ OPL = 72°.
 -/
 
 theorem rusczyk_problem_2_9 {L M N O P : EuclideanSpace ℝ (Fin 2)}
-    (hL : L ≠ P) (hM : M ≠ P) (hN : N ≠ P) (hO : O ≠ P)
     (hb₀ : Sbtw ℝ L P N) (hb₁ : Sbtw ℝ M P O) :
     ∡ O P L = ∡ M P N := by
+  have hL : L ≠ P := by intro hc; rw [hc] at hb₀;simp at hb₀
+  have hM : M ≠ P := by intro hc; rw [hc] at hb₁;simp at hb₁
+  have hN : N ≠ P := by intro hc; rw [hc] at hb₀;simp at hb₀
+  have hO : O ≠ P := by intro hc; rw [hc] at hb₁;simp at hb₁
   have h₀ := oangle_add hO hL hM
   have h₁ := oangle_add hL hM hN
   rw [oangle_eq_pi_iff_sbtw.mpr hb₁.symm] at h₀
   rw [oangle_eq_pi_iff_sbtw.mpr hb₀, ← h₀, add_comm, add_left_inj] at h₁
   exact h₁.symm
 
-
 theorem rusczyk_problem_2_8  {L M N O P : EuclideanSpace ℝ (Fin 2)}
-    (hL : L ≠ P) (hM : M ≠ P) (hN : N ≠ P) (hO : O ≠ P)
     (hb₀ : Sbtw ℝ L P N) (hb₁ : Sbtw ℝ M P O)
     (h : ∡ M P N = deg 72) :
-    ∡ O P L = deg 72 := rusczyk_problem_2_9 hL hM hN hO hb₀ hb₁ ▸ h
+    ∡ O P L = deg 72 := rusczyk_problem_2_9 hb₀ hb₁ ▸ h
 
 
 theorem a_2_10
@@ -219,48 +217,6 @@ theorem a_2_10
     simp
   exact eq_neg_of_add_eq_zero_left g₄
 
-/--
-                G
-               /
-           w  / z
-A ---------- B -------- C
-         x  / y
-           /
-      113°/ (67° ✓)
-D ------ E ----------- F
-      b / c
-       /
-      H
-
--/
-theorem rusczyk_problem_2_10 {m n : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2))}
-    {A B C D E F G H : EuclideanSpace ℝ (Fin 2)}
-    (hm : m = affineSpan ℝ {A, C})
-    (hn : n = affineSpan ℝ {D, F})
-    (h₁₂₄₅ : m.Parallel n)
-    (hB : B ∈ m)
-    (hE : E ∈ n)
-    (hB' : Sbtw ℝ A B C)
-    (hE' : Sbtw ℝ D E F)
-    (h : ∡ D E B = deg 113)
-    (h₀ : D ≠ E) (h₁ : F ≠ E)
-    (h₂ : B ≠ E)
-    (hmn : m ≠ n) :
-    ∡ B E F = deg 67 ∧ ∡ F E H = deg 113 := by
-  constructor
-  apply a_2_10 hE' h h₀ h₁ h₂
-  sorry
-
-
-example (l m n : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2)))
-    (h : l.Parallel m) (h₀ : m.Parallel n) : l.Parallel n := by
-  exact AffineSubspace.Parallel.trans h h₀
-
-
-open EuclideanGeometry
-
-
-
 /-
                 G
                /
@@ -273,92 +229,178 @@ D ------ E --p--------- F
       b / c
        /
       H
+-/
+lemma angle_eq_of_parallel_and_transversal
+    {A B D E H : EuclideanSpace ℝ (Fin 2)}
+    (h_par : (affineSpan ℝ {E, B}).Parallel (affineSpan ℝ {H, E'}))
+    (h_par' : (affineSpan ℝ {A, B}).Parallel (affineSpan ℝ {D, E'}))
+    (hABE : (∡ A B E).sign ≠ 0)
+    (h₀ : (∡ A B E).sign = (∡ D E' H).sign) : ∡ A B E = ∡ D E' H :=
+  (Angle.two_zsmul_eq_iff_eq (ha := hABE) (h := h₀)).mp <|
+  EuclideanGeometry.two_zsmul_oangle_of_parallel h_par' h_par
+
+/--
+                G
+        (113)  /
+           w  / z
+A ---------- B -------- C
+         x  / y (113° ✓)
+  (67° ✓)  /
+      113°/ (67° ✓)
+D ------ E ----------- F
+      b / c (113° ✓)
+(67° ✓)/
+      H
+
+de fe ab bc
+he be bg
 
 -/
--- lemma angle_eq_of_parallel_and_transversal
---   {A B C D E F G H : EuclideanSpace ℝ (Fin 2)}
---   (h_parallel : (affineSpan ℝ {A, C}).Parallel (affineSpan ℝ {D, F}))
---   (h_parallel' : (affineSpan ℝ {A, B}).Parallel (affineSpan ℝ {D, E}))
---   (h : Sbtw ℝ A B C)
---   (h' : Sbtw ℝ D E F)
---   (hh : Sbtw ℝ G B H)
---   (h₀ : (affineSpan ℝ {G, H}).SSameSide A D) -- "sign the same"?
---   (g₀ : (affineSpan ℝ {A, D}).SSameSide B E) -- "sign the same"?
---   (g₁ : (affineSpan ℝ {B, E}).SSameSide A D)
---   :
---   ∡ D E B = ∡ A B G := by
---   have h₁ : (affineSpan ℝ {B, E}).Parallel (affineSpan ℝ {B, E}) := by
---     exact AffineSubspace.affineSpan_pair_parallel_iff_vectorSpan_eq.mpr rfl
---   have h₂ : (affineSpan ℝ {B, E}).Parallel (affineSpan ℝ {E, B}) :=
---     AffineSubspace.affineSpan_pair_parallel_iff_vectorSpan_eq.mpr
---       <| congrArg _ <| Set.pair_comm B E
---   have h₃ := EuclideanGeometry.two_zsmul_oangle_of_parallel (h₁₂₄₅ := h_parallel')
---     (h₃₂₆₅ := h₂.symm)
---   -- CAN USE THIS to go from `sameside` to `sameray`
---   have := (AffineSubspace.sSameSide_iff_exists_left (s := affineSpan ℝ {A, D})
---     (p₁ := A) (x := B) (y := E) (left_mem_affineSpan_pair ℝ A D)).mp g₀
---   obtain ⟨p,hp⟩ := this.2.2
---   -- ALSO USEFUL to go from `sameray` to `oangle 0` which can then be combined with `oangle.add`.
---   have :=  (Orientation.oangle_eq_zero_iff_sameRay (o := o)).mpr hp.2
+theorem rusczyk_problem_2_11
+    {A B C D E F G H : EuclideanSpace ℝ (Fin 2)}
+    (g₆  : (affineSpan ℝ {A, B}).Parallel (affineSpan ℝ {F, E}))
+    (g₁₀ : (affineSpan ℝ {C, B}).Parallel (affineSpan ℝ {F, E}))
+    (g₁₄ : (affineSpan ℝ {G, B}).Parallel (affineSpan ℝ {E, B}))
+    (g₂ : (∡ H E D).sign ≠ 0)
+    (g₁₁ : (∡ C B E).sign ≠ 0)
+    (g₃  : (∡ H E D).sign = (∡ B E F).sign) -- hed = bef = eba
+    (g₈  : (∡ E B A).sign = (∡ B E F).sign)
+    (g₁₂ :  (∡ C B E).sign = (∡ F E H).sign) -- cbe = feh = abg
+    (g₁₇ : (∡ A B G).sign = (∡ C B E).sign)
+    (hE' : Sbtw ℝ D E F) (hH' : Sbtw ℝ B E H)
+    (h : ∡ D E B = deg 113) :
+        ∡ B E F = deg 67  ∧ ∡ F E H = deg 113
+      ∧ ∡ H E D = deg 67  ∧ ∡ E B A = deg 67
+      ∧ ∡ C B E = deg 113 ∧ ∡ A B G = deg 113 := by
+  have g₀ : (affineSpan ℝ {D, E}).Parallel (affineSpan ℝ {F, E}) := by
+    rw [sbtw_iff_left_ne_and_right_mem_image_Ioi] at hE'
+    simp at hE'
+    simp [AffineMap.lineMap] at hE'
+    obtain ⟨x,hx⟩ := hE'.2
+    rw [← hx.2]
+    refine AffineSubspace.affineSpan_pair_parallel_iff_exists_unit_smul'.mpr ?_
+    simp
+    have : 1 - x ≠ 0 := by linarith
+    use ⟨1 - x, 1 / (1 - x), by field_simp, by field_simp⟩
+    simp
+    have (u v w : EuclideanSpace ℝ (Fin 2)) : u - (v + w) = u - w - v :=
+      by exact sub_add_eq_sub_sub_swap u v w
+    rw [this]
+    generalize E - D = α
+    have : α = (1 : ℝ) • α := by simp
+    nth_rw 2 [this]
+    exact sub_smul 1 x α
+  have g₁  : (affineSpan ℝ {H, E}).Parallel (affineSpan ℝ {B, E}) := by
+    rw [sbtw_iff_left_ne_and_right_mem_image_Ioi] at hH'
+    simp at hH'
+    simp [AffineMap.lineMap] at hH'
+    obtain ⟨x,hx⟩ := hH'.2
+    rw [← hx.2]
+    refine AffineSubspace.affineSpan_pair_parallel_iff_exists_unit_smul'.mpr ?_
+    simp
+    rw [sub_add_eq_sub_sub_swap]
+    use ⟨1 / (1 - x), 1 - x, by field_simp, by field_simp⟩
+    simp
+    generalize E - B = α
+    have : α = (1 : ℝ) • α := by simp
+    nth_rw 1 [this]
+    rw [← sub_smul]
+    rw [← smul_assoc]
+    simp
+    suffices (1 : ℝ) • α = α by
+        convert this
+        apply inv_mul_cancel₀
+        linarith
+    simp
+  have g₁₆ : (∡ A B G).sign ≠ 0 := by rw [g₁₇]; exact g₁₁
+  have g₇ : (∡ E B A).sign ≠ 0 := by rw [g₈, ← g₃]; exact g₂
+  have g₁₅ : (affineSpan ℝ {A, B}).Parallel (affineSpan ℝ {C, B}) := g₆.trans g₁₀.symm
+  have h₀ : D ≠ E := by intro hc;rw [hc] at hE';simp at hE'
+  have h₁ : F ≠ E := by intro hc;rw [hc] at hE';simp at hE'
+  have h₂ : B ≠ E := by intro hc;rw [hc] at hH';simp at hH'
+  have hBEF := a_2_10 hE' h h₀ h₁ h₂
+  have g₄ :  ∡ F E H = ↑(deg 113) := by
+      have := @rusczyk_problem_2_9 (P := E) (O := F) (L := H) (M := D) (N := B)
+        hH'.symm hE'
+      rw [this]
+      exact h
+  have g₅ :  ∡ H E D = ↑(deg 67) := by
+        rw [← hBEF]
+        have := @angle_eq_of_parallel_and_transversal
+          (A := H) (B := E) (E := D) (D := B) (H := F) (E' := E)
+        apply this
+        exact g₀
+        exact g₁
+        exact g₂
+        exact g₃
+  have k₀ : ({B,E} : Set (EuclideanSpace ℝ (Fin 2))) = {E,B} := by
+              ext;simp;tauto
+  have g₉ :  ∡ E B A = ↑(deg 67) := by
+        · rw [← hBEF]
+          have := @angle_eq_of_parallel_and_transversal
+            (A := E) (B := B) (E := A) (D := B) (E' := E) (H := F)
+          apply this
+          · exact g₆
+          · rw [k₀]
+          exact g₇
+          exact g₈
+  have g₁₃ : ∡ C B E = ↑(deg 113) := by
+          rw [← g₄]
+          have := @angle_eq_of_parallel_and_transversal
+            (A := C) (B := B) (E := E) (D := F) (E' := E) (H := H)
+          apply this
+          rw [← k₀];exact g₁.symm
+          exact g₁₀
+          exact g₁₁
+          exact g₁₂
+  constructor
+  · exact hBEF
+  · constructor
+    · exact g₄
+    · constructor
+      · exact g₅
+      · constructor
+        · exact g₉
+        · constructor
+          · exact g₁₃
+          · rw [← g₁₃]
+            have := @angle_eq_of_parallel_and_transversal
+              (A := A) (B := B) (E := G) (D := C) (E' := B) (H := E)
+            apply this
+            exact g₁₄
+            exact g₁₅
+            exact g₁₆
+            exact g₁₇
 
---   have := (AffineSubspace.sSameSide_iff_exists_left (s := affineSpan ℝ {B, E})
---     (p₁ := B) (x := A) (y := D) (left_mem_affineSpan_pair ℝ B E)).mp g₁
---   obtain ⟨p,hp⟩ := this.2.2
---   have :=  (Orientation.oangle_eq_zero_iff_sameRay (o := o)).mpr hp.2
+theorem rusczyk_problem_2_11_oneAngle
+    {B D E F H : EuclideanSpace ℝ (Fin 2)}
+    (hE' : Sbtw ℝ D E F) (hH' : Sbtw ℝ B E H)
+    (h : ∡ D E B = deg 113) :
+    ∡ B E F = deg 67 ∧ ∡ F E H = deg 113 := by
+  have h₀ : D ≠ E := by intro hc;rw [hc] at hE';simp at hE'
+  have h₁ : F ≠ E := by intro hc;rw [hc] at hE';simp at hE'
+  have h₂ : B ≠ E := by intro hc;rw [hc] at hH';simp at hH'
+  have h₃ : H ≠ E := by intro hc;rw [hc] at hH';simp at hH'
+  have hBEF := a_2_10 hE' h h₀ h₁ h₂
+  constructor
+  · exact hBEF
+  · have := @rusczyk_problem_2_9 (P := E) (O := F) (L := H) (M := D) (N := B)
+      hH'.symm hE'
+    rw [this]
+    exact h
 
 
---   have :  o.oangle (A -ᵥ B) (D -ᵥ E) = 0 := by
---     convert this using 1
---     sorry
+
+example (l m n : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2)))
+    (h : l.Parallel m) (h₀ : m.Parallel n) : l.Parallel n := by
+  exact AffineSubspace.Parallel.trans h h₀
+
+
+open EuclideanGeometry
 
 
 
---   have : EuclideanSpace ℝ (Fin 2) := ![0,1]
---   have : AffineSubspace ℝ (EuclideanSpace ℝ (Fin 2)) := by
---     -- the line y = π x + 1
---     refine AffineSubspace.mk' ![0,1] ?_
---     exact {
---       carrier := {x | x 1 = π * x 0} -- the direction
---       add_mem' := by
---         intro a b ha hb
---         simp at ha hb ⊢
---         rw [ha,hb]
---         linarith
---       zero_mem' := by
---         simp
---       smul_mem' := by
---         intro c x hx
---         simp at hx ⊢
---         rw [hx]
---         linarith
---     }
---   let v₁ := (![0,1] : EuclideanSpace ℝ (Fin 2)) - (![0,1] : EuclideanSpace ℝ (Fin 2))
---   let v₂ := (![0,1] : EuclideanSpace ℝ (Fin 2)) -ᵥ (![0,1] : EuclideanSpace ℝ (Fin 2))
---   have : v₁ = v₂ := by
---     show (![0,1] : EuclideanSpace ℝ (Fin 2)) - (![0,1] : EuclideanSpace ℝ (Fin 2))
---       = (![0,1] : EuclideanSpace ℝ (Fin 2)) -ᵥ (![0,1] : EuclideanSpace ℝ (Fin 2))
---     simp only [Nat.succ_eq_add_one, Nat.reduceAdd, sub_self, vsub_eq_sub]
---   have :  o.oangle (B -ᵥ A) (C -ᵥ A) = ∡ B A C := by
---     -- unfold EuclideanGeometry.oangle
---     rfl
 
---   -- have := @AffineSubspace.SSameSide.oangle_sign_eq --(hp₃p₄ := g₀) (p₁ := D) --(p₂ := B)
---   have :  (∡ A B E).sign = (∡ B E D).sign := by
---     -- have := @EuclideanGeometry.oangle_
---     sorry
---   repeat rw [two_smul] at h₃
---     --h_parallel this.symm
-
---   sorry
-
--- example : (![1,0] : EuclideanSpace ℝ (Fin 2))
---         = (![1,0] : EuclideanSpace ℝ (Fin 2))
---   := rfl
-
--- example (A B : EuclideanSpace ℝ (Fin 2)) : o.oangle A B = 0 := by sorry
-
--- example : o.oangle ((![1,0]) : EuclideanSpace ℝ (Fin 2))
---                    (![0,1] : EuclideanSpace ℝ (Fin 2)) = 0 := by sorry
 
 def e₁ : EuclideanSpace ℝ (Fin 2) := WithLp.toLp 2 ![(1:ℝ),0]
 
