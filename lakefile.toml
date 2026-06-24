@@ -1,5 +1,5 @@
-name = "aops"
-defaultTargets = ["Aops"]
+name = "omlib"
+defaultTargets = ["Omlib"]
 
 [leanOptions]
 pp.unicode.fun = true
@@ -9,4 +9,4 @@ name = "mathlib"
 scope = "leanprover-community"
 
 [[lean_lib]]
-name = "Aops"
+name = "Omlib"

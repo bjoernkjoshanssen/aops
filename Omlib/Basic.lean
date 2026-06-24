@@ -13,8 +13,7 @@ https://drive.google.com/file/d/1nZ7VXjXISWQnUQNZiVDlBqbKDpxhhhyQ/view
 
 /-- Sample Problem A-1. -/
 lemma event1_A_1 : let f := (fun x : ℝ => - x^2 + 2 * x - 3)
-    f 1 = - 2 ∧ (∀ x, f x ≤ f 1)
-     := by
+    f 1 = - 2 ∧ (∀ x, f x ≤ f 1) := by
   intro f
   constructor
   · simp [f]
@@ -83,7 +82,8 @@ lemma event1_A_3 (x : ℝ) :
     | inr h => subst x;ring_nf
 
 /-- Sample Problem B-1. -/
-lemma event1_B_1 (t c : ℝ) (ht : t = -4 + √7) (hc: 2*t^2+16*t+c=0) : c = 18 := by
+lemma event1_B_1 (t c : ℝ) (ht : t = -4 + √7)
+    (hc: 2 * t^2 + 16 * t + c = 0) : c = 18 := by
   subst t
   field_simp at hc
   ring_nf at hc
@@ -96,42 +96,34 @@ lemma event1_B_2_real (k : ℝ) (p : ℝ → ℝ)
   (hp : p = fun x : ℝ => 3 * x^2 + 6 * x + k) :
   (k < 3 ↔ ∃ a b, a ≠ b ∧ p a = 0 ∧ p b = 0)
   ∧
-  (k ≤ 3 ↔ ∃ a, p a = 0)
-  := by
+  (k ≤ 3 ↔ ∃ a, p a = 0) := by
   have g₀ : k < 3 ↔ ∃ a b, a ≠ b ∧ p a = 0 ∧ p b = 0 := by
-
     constructor
     · intro hk
-      use √(1-k/3)-1
-      use -√(1-k/3)-1
+      use √(1-k/3)-1, -√(1-k/3)-1
       constructor
       suffices √(1 - k / 3) ≠ -√(1 - k / 3) by
         contrapose! this
         linarith
       refine self_ne_neg.mpr ?_
-      refine (Real.sqrt_ne_zero ?_).mpr ?_
-      linarith
-      linarith
+      refine (Real.sqrt_ne_zero ?_).mpr ?_ <;> linarith
       constructor <;> (
       rw [hp]
       simp
       rw [pow_two]
       ring_nf
-      rw [Real.sq_sqrt]
-      linarith
-      linarith)
+      rw [Real.sq_sqrt] <;> linarith)
     intro ⟨a,b,hab⟩
     rw [hp] at hab
     simp at hab
-    have h₀a : a ^ 2 + 2 * a + k / 3 = 0 := by linarith
-    have h₀b : b ^ 2 + 2 * b + k / 3 = 0 := by linarith
     have h₁a : a ^ 2 + 2 * a = (a + 1) ^ 2 - 1 := by rw [pow_two];linarith
     have h₁b : b ^ 2 + 2 * b = (b + 1) ^ 2 - 1 := by rw [pow_two];linarith
+    have h₀a : a ^ 2 + 2 * a + k / 3 = 0 := by linarith
+    have h₀b : b ^ 2 + 2 * b + k / 3 = 0 := by linarith
     rw [h₁a] at h₀a
     rw [h₁b] at h₀b
     have h₂a : (a + 1) ^ 2 = 1 - k / 3 := by linarith
     have h₂b : (b + 1) ^ 2 = 1 - k / 3 := by linarith
-
     by_cases H : a = -1
     · subst a
       simp at h₂a
@@ -151,30 +143,43 @@ lemma event1_B_2_real (k : ℝ) (p : ℝ → ℝ)
       apply hab.1
       linarith
     exact Std.lt_of_le_of_ne h₃ G
-
-
   constructor
   tauto
-  have h₀: k = 3 → ∃ a, p a = 0 := by
-    intro hk
+  have h₀ (hk : k = 3) : ∃ a, p a = 0 := by
     subst k
     rw [hp]
     simp
     use -1
-    simp
-    linarith
+    nlinarith
   constructor
-  intro hk
-  have : k < 3 ∨ k = 3 := by exact Std.le_iff_lt_or_eq.mp hk
-  cases this <;> tauto
+  · intro hk
+    have : k < 3 ∨ k = 3 := by exact Std.le_iff_lt_or_eq.mp hk
+    cases this <;> tauto
   intro ⟨a,ha⟩
   rw [hp] at ha
-  simp at ha
-  have : a ^ 2 + 2 * a + k / 3 = 0 := by linarith
-  have : (a + 1) ^ 2 - 1 + k / 3 = 0 := by linarith
   have : (a + 1) ^ 2 = 1 - k / 3 := by linarith
-  have : 0 ≤ 1 - k / 3 := by rw[← this];positivity
-  linarith
+  nlinarith
+
+lemma event1_B_2_real_Aristotle (k : ℝ) (p : ℝ → ℝ)
+  (hp : p = fun x : ℝ => 3 * x^2 + 6 * x + k) :
+  (k < 3 ↔ ∃ a b, a ≠ b ∧ p a = 0 ∧ p b = 0)
+  ∧
+  (k ≤ 3 ↔ ∃ a, p a = 0) := by
+  constructor
+  · constructor
+    · intro hk
+      exact ⟨(-6 + √(36 - 12 * k)) / 6, (-6 - √(36 - 12 * k)) / 6,
+        by nlinarith [Real.mul_self_sqrt (show 0 ≤ 36 - 12 * k by linarith)],
+        by rw [hp]; linarith [Real.mul_self_sqrt (show 0 ≤ 36 - 12 * k by linarith)],
+        by rw [hp]; linarith [Real.mul_self_sqrt (show 0 ≤ 36 - 12 * k by linarith)]⟩
+    · rintro ⟨a, b, hab, ha, hb⟩
+      subst hp
+      nlinarith [mul_self_pos.mpr (sub_ne_zero.mpr hab)]
+  · exact ⟨fun hk =>
+      ⟨-1 - Real.sqrt (1 - k / 3),
+       by rw [hp]; linarith [Real.mul_self_sqrt (show 0 ≤ 1 - k / 3 by linarith)]⟩,
+    fun ⟨a, ha⟩ => by rw [hp] at ha; linarith [sq_nonneg (a + 1)]⟩
+
 
 /-- Sample Problem B-2, "complex numbers version". -/
 lemma event1_B_2_complex (k : ℝ) (p : ℂ → ℂ)
@@ -191,17 +196,6 @@ lemma event1_B_2_complex (k : ℝ) (p : ℂ → ℂ)
       ring_nf at this
       simp at this
       rw [← this]
-      ring_nf
-      field_simp
-      suffices z * (2 + z) * 3 = z * 3 * (2 + z * ↑1) by
-        rw [this]
-        simp
-        left
-        have : (@Nat.cast ℂ Mathlib.Meta.NormNum.instAddMonoidWithOne'.toNatCast 1 : ℂ)
-          = 1 := by exact Nat.cast_one
-        rw [this]
-        simp
-        rfl
       ring_nf
     have : (z + 1) ^ 2 - 1 + k / 3 = 0 := by
       rw [← this]
@@ -355,7 +349,7 @@ lemma event3_B_1 (a : ℕ → ℤ)
 
 open Finset in
 /-- e,m,s = English, Math, Science -/
-lemma event3_c (n : ℕ) (e m s : Finset (Fin n))
+lemma event5_c (n : ℕ) (e m s : Finset (Fin n))
     (h₀ : #e = 100)
     (h₁ : #m ≤ 80)
     -- (h₂ : #s = 60) -- not needed
@@ -473,7 +467,7 @@ lemma event3_c (n : ℕ) (e m s : Finset (Fin n))
 --         · sorry
 
 open Finset in
-lemma event3_c_lower_sharp' :
+lemma event5_c_lower_sharp' :
  ∃ (e m s : Finset ℕ),
     (#e = 100) ∧
     (#m = 80) ∧
@@ -505,7 +499,7 @@ lemma event3_c_lower_sharp' :
   simp
 
 open Finset in
-lemma event3_c_upper_sharp' :
+lemma event5_c_upper_sharp' :
  ∃ (e m s : Finset ℕ),
     (#e = 100) ∧
     (#m = 80) ∧
